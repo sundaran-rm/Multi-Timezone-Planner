@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Consolidated Timezone Meeting Planner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #0b1020;
+      --bg-elevated: #151a2c;
+      --bg-elevated-soft: #1d2236;
+      --accent: #4f8cff;
+      --accent-soft: rgba(79, 140, 255, 0.16);
+      --accent-strong: #2c66d8;
+      --text: #f7f7ff;
+      --text-soft: #b6bdd8;
+      --border-subtle: rgba(255, 255, 255, 0.07);
+      --danger: #ff5573;
+      --radius-lg: 12px;
+      --radius-md: 8px;
+      --shadow-soft: 0 18px 45px rgba(0, 0, 0, 0.55);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      padding: 1.5rem;
+      background: radial-gradient(circle at top, #1c2440 0, #050813 52%, #020309 100%);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    @media (max-width: 600px) {
+      body {
+        padding: 0.75rem;
+      }
+    }
+
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .page-title {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .page-title h1 {
+      font-size: 1.35rem;
+      letter-spacing: 0.02em;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .page-title h1 span.badge {
+      font-size: 0.7rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      border: 1px solid var(--accent-soft);
+      background: linear-gradient(120deg, rgba(79,140,255,0.14), transparent);
+      color: var(--text-soft);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .page-title p {
+      margin: 0;
+      font-size: 0.85rem;
+      color: var(--text-soft);
+    }
+
+    .page-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      font-size: 0.78rem;
+      color: var(--text-soft);
+    }
+
+    .pill {
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(255, 255, 255, 0.02);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      white-space: nowrap;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.6fr);
+      gap: 1rem;
+      align-items: flex-start;
+    }
+
+    @media (max-width: 980px) {
+      main {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .card {
+      background: radial-gradient(circle at top left, rgba(79,140,255,0.16), transparent 55%), var(--bg-elevated);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-soft);
+      padding: 0.9rem 1rem 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at top right, rgba(79, 140, 255, 0.18), transparent 55%),
+        radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.04), transparent 55%);
+      opacity: 0.75;
+      mix-blend-mode: screen;
+    }
+
+    .card-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .card-header h2 {
+      margin: 0;
+      font-size: 0.92rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text-soft);
+    }
+
+    .card-header small {
+      font-size: 0.75rem;
+      color: var(--text-soft);
+      opacity: 0.9;
+    }
+
+    .controls, .meeting-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .field-group {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+      font-size: 0.8rem;
+    }
+
+    .field label {
+      color: var(--text-soft);
+      font-size: 0.78rem;
+    }
+
+    input, select, button {
+      font: inherit;
+    }
+
+    input[type="text"],
+    input[type="date"],
+    input[type="time"],
+    select {
+      padding: 0.32rem 0.5rem;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(4, 7, 20, 0.9);
+      color: var(--text);
+      font-size: 0.8rem;
+      outline: none;
+      transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+    }
+
+    input::placeholder {
+      color: rgba(182, 189, 216, 0.55);
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(79, 140, 255, 0.3);
+      background: rgba(7, 10, 28, 0.95);
+    }
+
+    button {
+      border-radius: 999px;
+      border: 1px solid var(--accent-strong);
+      background: radial-gradient(circle at top, var(--accent), var(--accent-strong));
+      color: var(--text);
+      padding: 0.32rem 0.9rem;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      white-space: nowrap;
+      transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+      box-shadow: 0 10px 24px rgba(79, 140, 255, 0.35);
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 36px rgba(79, 140, 255, 0.45);
+    }
+
+    button.secondary {
+      background: rgba(11, 16, 33, 0.95);
+      border-color: rgba(255, 255, 255, 0.18);
+      color: var(--text-soft);
+      box-shadow: none;
+    }
+
+    button.secondary:hover {
+      background: rgba(17, 24, 48, 0.98);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+    }
+
+    .remove-row {
+      border-color: rgba(255, 85, 115, 0.8);
+      color: #ffd1dd;
+      background: radial-gradient(circle at top, rgba(255, 85, 115, 0.65), rgba(179, 35, 78, 0.95));
+      box-shadow: 0 10px 26px rgba(255, 85, 115, 0.45);
+    }
+
+    .remove-row:hover {
+      box-shadow: 0 14px 34px rgba(255, 85, 115, 0.6);
+    }
+
+    .participants-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-top: 0.25rem;
+      padding: 0.45rem;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, rgba(9, 12, 30, 0.9), rgba(9, 14, 40, 0.96));
+      border: 1px dashed rgba(255, 255, 255, 0.1);
+    }
+
+    .participant-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.2fr) auto;
+      gap: 0.45rem;
+      align-items: center;
+    }
+
+    @media (max-width: 600px) {
+      .participant-row {
+        grid-template-columns: minmax(0, 1.5fr);
+      }
+    }
+
+    .participant-row input[type="text"],
+    .participant-row select {
+      width: 100%;
+    }
+
+    .participant-row .remove-row {
+      padding-inline: 0.5rem;
+      justify-content: center;
+    }
+
+    .meeting-row + .meeting-row {
+      margin-top: 0.6rem;
+      padding-top: 0.6rem;
+      border-top: 1px dashed rgba(255, 255, 255, 0.1);
+    }
+
+    .meeting-row-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.78rem;
+      color: var(--text-soft);
+      margin-bottom: 0.1rem;
+    }
+
+    .meeting-row-header span {
+      opacity: 0.85;
+    }
+
+    .meeting-row-header small {
+      opacity: 0.85;
+    }
+
+    .table-wrapper {
+      margin-top: 0.4rem;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(135deg, rgba(12, 16, 35, 0.96), rgba(13, 18, 40, 1));
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: 0 18px 45px rgba(0, 0, 0, 0.65);
+      max-height: min(420px, 55vh);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .table-header-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.4rem 0.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 0.78rem;
+      color: var(--text-soft);
+      background: radial-gradient(circle at left, rgba(79,140,255,0.2), transparent 55%);
+    }
+
+    .table-header-bar span.dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: radial-gradient(circle at top left, #00ffbf, #2bff72);
+      box-shadow: 0 0 12px rgba(0, 255, 191, 0.8);
+      margin-right: 0.3rem;
+    }
+
+    .table-scroll {
+      overflow: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--accent-soft) transparent;
+    }
+
+    .table-scroll::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+
+    .table-scroll::-webkit-scrollbar-thumb {
+      background: var(--accent-soft);
+      border-radius: 999px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      color: var(--text);
+    }
+
+    thead {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: linear-gradient(180deg, rgba(9, 12, 32, 0.98), rgba(9, 13, 36, 0.98));
+    }
+
+    th, td {
+      padding: 0.45rem 0.55rem;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+    th {
+      font-weight: 500;
+      color: var(--text-soft);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(10px);
+    }
+
+    tbody tr:nth-child(even) td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    tbody tr:nth-child(odd) td {
+      background: transparent;
+    }
+
+    tbody tr:hover td {
+      background: rgba(79, 140, 255, 0.08);
+    }
+
+    td:nth-child(1) {
+      color: var(--text-soft);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .note {
+      margin-top: 0.4rem;
+      font-size: 0.76rem;
+      color: var(--text-soft);
+      opacity: 0.85;
+    }
+
+    /* Collapsible sections */
+    details.collapsible {
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-subtle);
+      background: radial-gradient(circle at top left, rgba(79,140,255,0.16), transparent 55%), var(--bg-elevated);
+      box-shadow: var(--shadow-soft);
+      overflow: hidden;
+    }
+
+    details.collapsible[open] {
+      border-color: rgba(79, 140, 255, 0.6);
+    }
+
+    details.collapsible > summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 0.7rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text-soft);
+      background: radial-gradient(circle at top left, rgba(79,140,255,0.3), transparent 55%);
+    }
+
+    details.collapsible > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .summary-left {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .summary-icon {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(79,140,255,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      color: var(--accent);
+      background: rgba(6, 11, 28, 0.9);
+    }
+
+    .summary-label {
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .summary-right {
+      font-size: 0.7rem;
+      opacity: 0.9;
+    }
+
+    .details-content {
+      padding: 0.4rem 1rem 0.9rem;
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <div class="page-title">
+      <h1>
+        Multi‑Timezone Planner
+      </h1>
+      <p>Define meetings once, share a consolidated participant‑centric schedule across time zones.</p>
+    </div>
+    <div class="page-actions">
+
+    </div>
+  </header>
+
+  <main>
+    <!-- Collapsible participants -->
+    <details class="collapsible" open id="participantsDetails">
+      <summary>
+        <div class="summary-left">
+          <div class="summary-icon">👤</div>
+          <span class="summary-label">Participants</span>
+        </div>
+        <div class="summary-right">
+          Click to expand or collapse participant list
+        </div>
+      </summary>
+      <div class="details-content">
+        <section class="card" style="box-shadow:none;border:none;background:transparent;padding:0;">
+          <div class="card-inner">
+            <div class="card-header">
+              <h2>Participants</h2>
+            </div>
+            <div class="controls">
+              <div class="participants-list" id="participantTzContainer"></div>
+              <button type="button" class="secondary" id="addTzButton">+ Add participant</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </details>
+
+    <!-- Collapsible meetings -->
+    <details class="collapsible" open id="meetingsDetails">
+      <summary>
+        <div class="summary-left">
+          <div class="summary-icon">≡</div>
+          <span class="summary-label">Meetings</span>
+        </div>
+        <div class="summary-right">
+          Click to expand or collapse meeting definitions
+        </div>
+      </summary>
+      <div class="details-content">
+        <section class="card" style="box-shadow:none;border:none;background:transparent;padding:0;">
+          <div class="card-inner">
+            <div class="card-header" style="margin-bottom:0.35rem;">
+              <h2>Meeting records</h2>
+            </div>
+            <div class="controls">
+              <div id="meetingsContainer"></div>
+              <button type="button" id="addMeetingButton">+ Add meeting record</button>
+            </div>
+          </div>
+        </section>
+      </div>
+    </details>
+  </main>
+
+  <section class="table-wrapper">
+    <div class="table-header-bar">
+      <div style="display:flex;align-items:center;gap:0.3rem;">
+        <span class="dot"></span>
+        <span>Consolidated participant schedule</span>
+      </div>
+      <span style="font-size:0.72rem;opacity:0.9;">Scroll horizontally for more columns if needed</span>
+    </div>
+    <div class="table-scroll">
+      <table id="resultsTable">
+        <thead>
+          <tr id="headerRow">
+            <th>Meeting #</th>
+            <!-- participant headers injected dynamically -->
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="note">
+    Data is computed with <code>Intl.DateTimeFormat</code> and IANA time zones so DST per region and date is handled automatically.
+  </p>
+
+  <script>
+    const TIMEZONES = [
+      "UTC",
+      "America/Los_Angeles",
+      "America/Denver",
+      "America/Chicago",
+      "America/New_York",
+      "Europe/London",
+      "Europe/Berlin",
+      "Europe/Warsaw",
+      "Europe/Moscow",
+      "Asia/Dubai",
+      "Asia/Kolkata",
+      "Asia/Bangkok",
+      "Asia/Singapore",
+      "Asia/Tokyo",
+      "Australia/Sydney"
+    ];
+
+    const participantContainer = document.getElementById("participantTzContainer");
+    const addTzButton = document.getElementById("addTzButton");
+    const addMeetingButton = document.getElementById("addMeetingButton");
+    const meetingsContainer = document.getElementById("meetingsContainer");
+    const resultsBody = document.querySelector("#resultsTable tbody");
+    const headerRow = document.getElementById("headerRow");
+
+    function populateTimezoneSelect(select, selectedValue) {
+      TIMEZONES.forEach(tz => {
+        const opt = document.createElement("option");
+        opt.value = tz;
+        opt.textContent = tz;
+        if (tz === selectedValue) opt.selected = true;
+        select.appendChild(opt);
+      });
+    }
+
+    function createParticipantRow(defaultTz, defaultName) {
+      const row = document.createElement("div");
+      row.className = "participant-row";
+
+      const nameInput = document.createElement("input");
+      nameInput.type = "text";
+      nameInput.placeholder = "Participant name";
+      nameInput.value = defaultName || "";
+
+      const select = document.createElement("select");
+      populateTimezoneSelect(select, defaultTz || "Europe/London");
+
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.textContent = "✕";
+      removeBtn.className = "remove-row";
+      removeBtn.title = "Remove participant";
+
+      removeBtn.addEventListener("click", () => {
+        row.remove();
+        rebuildTable();
+      });
+
+      nameInput.addEventListener("input", rebuildTable);
+      select.addEventListener("change", rebuildTable);
+
+      row.appendChild(nameInput);
+      row.appendChild(select);
+      row.appendChild(removeBtn);
+      participantContainer.appendChild(row);
+    }
+
+    function formatInTimeZone(date, timeZone, options) {
+      return new Intl.DateTimeFormat("en-US", {
+        timeZone,
+        ...options
+      }).format(date);
+    }
+
+    function getParticipants() {
+      const rows = participantContainer.querySelectorAll(".participant-row");
+      return Array.from(rows).map((row, idx) => {
+        const nameInput = row.querySelector('input[type="text"]');
+        const select = row.querySelector("select");
+        const name = nameInput.value.trim() || `Participant ${idx + 1}`;
+        return {
+          label: name,
+          tz: select.value
+        };
+      });
+    }
+
+    function createMeetingRow() {
+      const index = meetingsContainer.querySelectorAll(".meeting-row").length + 1;
+
+      const row = document.createElement("div");
+      row.className = "meeting-row";
+      row.dataset.meetingIndex = index;
+
+      const header = document.createElement("div");
+      header.className = "meeting-row-header";
+      header.innerHTML = `<span>Meeting #${index}</span>`;
+
+      const fields = document.createElement("div");
+      fields.className = "field-group";
+
+      const dateField = document.createElement("div");
+      dateField.className = "field";
+      const dateLabel = document.createElement("label");
+      dateLabel.textContent = "Date";
+      const dateInput = document.createElement("input");
+      dateInput.type = "date";
+      dateField.appendChild(dateLabel);
+      dateField.appendChild(dateInput);
+
+      const timeField = document.createElement("div");
+      timeField.className = "field";
+      const timeLabel = document.createElement("label");
+      timeLabel.textContent = "Time";
+      const timeInput = document.createElement("input");
+      timeInput.type = "time";
+      timeInput.step = 900;
+      timeField.appendChild(timeLabel);
+      timeField.appendChild(timeInput);
+
+      const baseTzField = document.createElement("div");
+      baseTzField.className = "field";
+      const baseTzLabel = document.createElement("label");
+      baseTzLabel.textContent = "Base time zone";
+      const baseTzSelect = document.createElement("select");
+      baseTzField.appendChild(baseTzLabel);
+      baseTzField.appendChild(baseTzSelect);
+
+      const actionsField = document.createElement("div");
+      actionsField.className = "field";
+      const removeLabel = document.createElement("label");
+      removeLabel.textContent = " ";
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.textContent = "Remove";
+      removeBtn.className = "secondary remove-row";
+      actionsField.appendChild(removeLabel);
+      actionsField.appendChild(removeBtn);
+
+      fields.appendChild(dateField);
+      fields.appendChild(timeField);
+      fields.appendChild(baseTzField);
+      fields.appendChild(actionsField);
+
+      row.appendChild(header);
+      row.appendChild(fields);
+
+      const now = new Date();
+      const todayISO = now.toISOString().substring(0, 10);
+      dateInput.value = todayISO;
+      now.setMinutes(now.getMinutes() + 60 - now.getMinutes());
+      timeInput.value = now.toISOString().substring(11, 16);
+
+      const guessed = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+      populateTimezoneSelect(baseTzSelect, TIMEZONES.includes(guessed) ? guessed : "UTC");
+
+      dateInput.addEventListener("change", rebuildTable);
+      timeInput.addEventListener("change", rebuildTable);
+      baseTzSelect.addEventListener("change", rebuildTable);
+
+      removeBtn.addEventListener("click", () => {
+        row.remove();
+        renumberMeetings();
+        rebuildTable();
+      });
+
+      meetingsContainer.appendChild(row);
+      rebuildTable();
+    }
+
+    function renumberMeetings() {
+      const rows = meetingsContainer.querySelectorAll(".meeting-row");
+      rows.forEach((row, idx) => {
+        row.dataset.meetingIndex = idx + 1;
+        const header = row.querySelector(".meeting-row-header span");
+        if (header) header.textContent = `Meeting #${idx + 1}`;
+      });
+    }
+
+    function getMeetings() {
+      const rows = meetingsContainer.querySelectorAll(".meeting-row");
+      return Array.from(rows).map(row => {
+        const idx = Number(row.dataset.meetingIndex);
+        const dateInput = row.querySelector('input[type="date"]');
+        const timeInput = row.querySelector('input[type="time"]');
+        const baseTzSelect = row.querySelector("select");
+
+        const dateVal = dateInput.value;
+        const timeVal = timeInput.value;
+        if (!dateVal || !timeVal) return null;
+
+        const [year, month, day] = dateVal.split("-").map(Number);
+        const [hour, minute] = timeVal.split(":").map(Number);
+        const instant = new Date(year, month - 1, day, hour, minute);
+
+        return {
+          index: idx,
+          baseTz: baseTzSelect.value,
+          instant
+        };
+      }).filter(Boolean);
+    }
+
+    // Rebuild table with:
+    // Columns: Meeting #, <Name> (Timezone), ...
+    // Row per meeting, each cell: "HH:MM AM/PM - Wed, Feb 11, 2026".
+    function rebuildTable() {
+      const participants = getParticipants();
+      const meetings = getMeetings();
+      resultsBody.innerHTML = "";
+
+      // Header
+      headerRow.innerHTML = "<th>Meeting #</th>";
+      participants.forEach(p => {
+        const th = document.createElement("th");
+        th.textContent = `${p.label} (${p.tz})`;
+        headerRow.appendChild(th);
+      });
+
+      // Rows
+      meetings.forEach(meeting => {
+        const tr = document.createElement("tr");
+
+        const indexTd = document.createElement("td");
+        indexTd.textContent = meeting.index;
+        tr.appendChild(indexTd);
+
+        participants.forEach(p => {
+          const localTimeStr = formatInTimeZone(meeting.instant, p.tz, {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true
+          });
+          const localDateStr = formatInTimeZone(meeting.instant, p.tz, {
+            weekday: "short",
+            month: "short",
+            day: "2-digit",
+            year: "numeric"
+          });
+
+          const td = document.createElement("td");
+          td.textContent = `${localTimeStr} - ${localDateStr}`;
+          tr.appendChild(td);
+        });
+
+        resultsBody.appendChild(tr);
+      });
+    }
+
+    addTzButton.addEventListener("click", () => {
+      createParticipantRow();
+      rebuildTable();
+    });
+
+    addMeetingButton.addEventListener("click", () => {
+      createMeetingRow();
+    });
+
+    // Escape key collapses all collapsible sections.
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        document.querySelectorAll("details.collapsible[open]").forEach(d => {
+          d.open = false;
+        });
+      }
+    });
+
+    (function init() {
+      createParticipantRow("America/New_York", "Alice");
+      createParticipantRow("Europe/London", "Bob");
+      createParticipantRow("Asia/Kolkata", "Charlie");
+      createMeetingRow();
+    })();
+  </script>
+</body>
+</html>
