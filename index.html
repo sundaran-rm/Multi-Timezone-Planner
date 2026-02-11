@@ -103,15 +103,33 @@
       white-space: nowrap;
     }
 
-    main {
-      display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.6fr);
-      gap: 1rem;
-      align-items: flex-start;
+    .pill-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: radial-gradient(circle at top, #00ffbf, #2bff72);
+      box-shadow: 0 0 10px rgba(0,255,191,0.9);
     }
 
-    @media (max-width: 980px) {
-      main {
+    .pill-time {
+      font-variant-numeric: tabular-nums;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.7fr);
+      gap: 1rem;
+      align-items: flex-start;
+      transition: grid-template-columns 0.22s ease;
+    }
+
+    main.full-width-table {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    @media (max-width: 1100px) {
+      main,
+      main.full-width-table {
         grid-template-columns: minmax(0, 1fr);
       }
     }
@@ -326,8 +344,13 @@
       border: 1px solid rgba(255, 255, 255, 0.06);
       box-shadow: 0 18px 45px rgba(0, 0, 0, 0.65);
       max-height: min(420px, 55vh);
-      display: flex;
+      display: none;
       flex-direction: column;
+      transition: max-height 0.22s ease, width 0.22s ease;
+    }
+
+    main.full-width-table .table-wrapper {
+      max-height: none;
     }
 
     .table-header-bar {
@@ -417,7 +440,6 @@
       opacity: 0.85;
     }
 
-    /* Collapsible sections */
     details.collapsible {
       border-radius: var(--radius-lg);
       border: 1px solid var(--border-subtle);
@@ -479,6 +501,64 @@
     .details-content {
       padding: 0.4rem 1rem 0.9rem;
     }
+
+    .tz-explorer-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.6rem;
+      margin-top: 0.4rem;
+      font-size: 0.78rem;
+    }
+
+    .tz-explorer-item {
+      padding: 0.4rem 0.5rem;
+      border-radius: var(--radius-md);
+      background: rgba(4, 7, 20, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .tz-explorer-name {
+      font-weight: 500;
+      margin-bottom: 0.2rem;
+    }
+
+    .tz-explorer-time {
+      font-variant-numeric: tabular-nums;
+      color: var(--text-soft);
+    }
+
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 0.45rem;
+      margin-top: 0.4rem;
+      font-size: 0.78rem;
+    }
+
+    .team-card {
+      border-radius: var(--radius-md);
+      padding: 0.4rem 0.5rem;
+      background: rgba(4, 7, 22, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .team-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.15rem;
+      font-size: 0.76rem;
+      color: var(--text-soft);
+    }
+
+    .team-card-title {
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .team-card-body {
+      font-variant-numeric: tabular-nums;
+    }
   </style>
 </head>
 <body>
@@ -490,87 +570,142 @@
       <p>Define meetings once, share a consolidated participant‑centric schedule across time zones.</p>
     </div>
     <div class="page-actions">
-
+      <span class="pill">
+        <span class="pill-dot"></span>
+        <span id="currentTime" class="pill-time">--:--:--</span>
+      </span>
     </div>
   </header>
 
-  <main>
-    <!-- Collapsible participants -->
-    <details class="collapsible" open id="participantsDetails">
-      <summary>
-        <div class="summary-left">
-          <div class="summary-icon">👤</div>
-          <span class="summary-label">Participants</span>
-        </div>
-        <div class="summary-right">
-          Click to expand or collapse participant list
-        </div>
-      </summary>
-      <div class="details-content">
-        <section class="card" style="box-shadow:none;border:none;background:transparent;padding:0;">
-          <div class="card-inner">
-            <div class="card-header">
-              <h2>Participants</h2>
-            </div>
-            <div class="controls">
-              <div class="participants-list" id="participantTzContainer"></div>
-              <button type="button" class="secondary" id="addTzButton">+ Add participant</button>
-            </div>
+  <main id="mainLayout">
+    <!-- Left column: participants + timezone explorer -->
+    <section id="leftColumn">
+      <details class="collapsible" open id="participantsDetails">
+        <summary>
+          <div class="summary-left">
+            <div class="summary-icon">👤</div>
+            <span class="summary-label">Participants</span>
           </div>
-        </section>
-      </div>
-    </details>
+          <div class="summary-right">
+            Click to expand or collapse
+          </div>
+        </summary>
+        <div class="details-content">
+          <section class="card" style="box-shadow:none;border:none;background:transparent;padding:0;">
+            <div class="card-inner">
+              <div class="card-header"></div>
+              <div class="controls">
+                <div class="participants-list" id="participantTzContainer"></div>
+                <button type="button" class="secondary" id="addTzButton">+ Add participant</button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </details>
 
-    <!-- Collapsible meetings -->
-    <details class="collapsible" open id="meetingsDetails">
-      <summary>
-        <div class="summary-left">
-          <div class="summary-icon">≡</div>
-          <span class="summary-label">Meetings</span>
-        </div>
-        <div class="summary-right">
-          Click to expand or collapse meeting definitions
-        </div>
-      </summary>
-      <div class="details-content">
-        <section class="card" style="box-shadow:none;border:none;background:transparent;padding:0;">
-          <div class="card-inner">
-            <div class="card-header" style="margin-bottom:0.35rem;">
-              <h2>Meeting records</h2>
-            </div>
-            <div class="controls">
-              <div id="meetingsContainer"></div>
-              <button type="button" id="addMeetingButton">+ Add meeting record</button>
-            </div>
+      <details class="collapsible" open id="explorerDetails" style="margin-top:0.9rem;">
+        <summary>
+          <div class="summary-left">
+            <div class="summary-icon">🌐</div>
+            <span class="summary-label">Timezone explorer</span>
           </div>
-        </section>
-      </div>
-    </details>
+          <div class="summary-right">
+            Click to expand or collapse
+          </div>
+        </summary>
+        <div class="details-content">
+          <section class="card" style="box-shadow:none;border:none;background:transparent;padding:0;">
+            <div class="card-inner">
+              <div class="controls">
+                <div class="field-group">
+                  <div class="field">
+                    <label for="tzExplorerDate">Date</label>
+                    <input type="date" id="tzExplorerDate" />
+                  </div>
+                  <div class="field">
+                    <label for="tzExplorerTime">Time</label>
+                    <input type="time" id="tzExplorerTime" step="900" />
+                  </div>
+                  <div class="field">
+                    <label for="tzExplorerBase">Base time zone</label>
+                    <select id="tzExplorerBase"></select>
+                  </div>
+                </div>
+                <div class="tz-explorer-grid" id="tzExplorerGrid"></div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </details>
+    </section>
+
+    <!-- Right column: meetings + team planning + consolidated table -->
+    <section id="rightColumn">
+      <details class="collapsible" open id="meetingsDetails">
+        <summary>
+          <div class="summary-left">
+            <div class="summary-icon">≡</div>
+            <span class="summary-label">Meetings</span>
+          </div>
+          <div class="summary-right">
+            Click to expand or collapse
+          </div>
+        </summary>
+        <div class="details-content">
+          <section class="card" style="box-shadow:none;border:none;background:transparent;padding:0;">
+            <div class="card-inner">
+              <div class="controls">
+                <div id="meetingsContainer"></div>
+                <button type="button" id="addMeetingButton">+ Add meeting record</button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </details>
+
+      <details class="collapsible" open id="teamDetails" style="margin-top:0.9rem;">
+        <summary>
+          <div class="summary-left">
+            <div class="summary-icon">⏱</div>
+            <span class="summary-label">Team Planning View - Now</span>
+          </div>
+          <div class="summary-right">
+            Click to expand or collapse
+          </div>
+        </summary>
+        <div class="details-content">
+          <section class="card" style="box-shadow:none;border:none;background:transparent;padding:0;">
+            <div class="card-inner">
+              <div class="team-grid" id="teamViewGrid"></div>
+            </div>
+          </section>
+        </div>
+      </details>
+
+      <section class="table-wrapper" id="tableWrapper" style="margin-top:0.9rem;">
+        <div class="table-header-bar">
+          <div style="display:flex;align-items:center;gap:0.3rem;">
+            <span class="dot"></span>
+            <span>Consolidated Participant Schedule</span>
+          </div>
+          <span style="font-size:0.72rem;opacity:0.9;"></span>
+        </div>
+        <div class="table-scroll">
+          <table id="resultsTable">
+            <thead>
+              <tr id="headerRow">
+                <th>Meeting #</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+    </section>
   </main>
 
-  <section class="table-wrapper">
-    <div class="table-header-bar">
-      <div style="display:flex;align-items:center;gap:0.3rem;">
-        <span class="dot"></span>
-        <span>Consolidated participant schedule</span>
-      </div>
-      <span style="font-size:0.72rem;opacity:0.9;">Scroll horizontally for more columns if needed</span>
-    </div>
-    <div class="table-scroll">
-      <table id="resultsTable">
-        <thead>
-          <tr id="headerRow">
-            <th>Meeting #</th>
-            <!-- participant headers injected dynamically -->
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </section>
-
   <p class="note">
-    Data is computed with <code>Intl.DateTimeFormat</code> and IANA time zones so DST per region and date is handled automatically.
+    Local date/time cells are in the format <code>HH:MM AM/PM - DAY, MONTH DATE, YEAR</code>, computed with <code>Intl.DateTimeFormat</code> and IANA time zones.
   </p>
 
   <script>
@@ -598,14 +733,48 @@
     const meetingsContainer = document.getElementById("meetingsContainer");
     const resultsBody = document.querySelector("#resultsTable tbody");
     const headerRow = document.getElementById("headerRow");
+    const currentTimeEl = document.getElementById("currentTime");
+    const tzExplorerDate = document.getElementById("tzExplorerDate");
+    const tzExplorerTime = document.getElementById("tzExplorerTime");
+    const tzExplorerBase = document.getElementById("tzExplorerBase");
+    const tzExplorerGrid = document.getElementById("tzExplorerGrid");
+    const teamViewGrid = document.getElementById("teamViewGrid");
+    const tableWrapper = document.getElementById("tableWrapper");
+    const mainLayout = document.getElementById("mainLayout");
+
+    function safeGuessTimezone() {
+      try {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (tz && TIMEZONES.includes(tz)) return tz;
+      } catch (e) {}
+      return "UTC";
+    }
 
     function populateTimezoneSelect(select, selectedValue) {
+      select.innerHTML = "";
       TIMEZONES.forEach(tz => {
         const opt = document.createElement("option");
         opt.value = tz;
         opt.textContent = tz;
         if (tz === selectedValue) opt.selected = true;
         select.appendChild(opt);
+      });
+    }
+
+    function formatInTimeZone(date, timeZone, options) {
+      return new Intl.DateTimeFormat("en-US", {
+        timeZone,
+        ...options
+      }).format(date);
+    }
+
+    function getParticipants() {
+      const rows = participantContainer.querySelectorAll(".participant-row");
+      return Array.from(rows).map((row, idx) => {
+        const nameInput = row.querySelector('input[type="text"]');
+        const select = row.querySelector("select");
+        const name = nameInput.value.trim() || `Participant ${idx + 1}`;
+        return { label: name, tz: select.value };
       });
     }
 
@@ -630,35 +799,19 @@
       removeBtn.addEventListener("click", () => {
         row.remove();
         rebuildTable();
+        rebuildTimezoneExplorer();
       });
 
       nameInput.addEventListener("input", rebuildTable);
-      select.addEventListener("change", rebuildTable);
+      select.addEventListener("change", () => {
+        rebuildTable();
+        rebuildTimezoneExplorer();
+      });
 
       row.appendChild(nameInput);
       row.appendChild(select);
       row.appendChild(removeBtn);
       participantContainer.appendChild(row);
-    }
-
-    function formatInTimeZone(date, timeZone, options) {
-      return new Intl.DateTimeFormat("en-US", {
-        timeZone,
-        ...options
-      }).format(date);
-    }
-
-    function getParticipants() {
-      const rows = participantContainer.querySelectorAll(".participant-row");
-      return Array.from(rows).map((row, idx) => {
-        const nameInput = row.querySelector('input[type="text"]');
-        const select = row.querySelector("select");
-        const name = nameInput.value.trim() || `Participant ${idx + 1}`;
-        return {
-          label: name,
-          tz: select.value
-        };
-      });
     }
 
     function createMeetingRow() {
@@ -670,7 +823,7 @@
 
       const header = document.createElement("div");
       header.className = "meeting-row-header";
-      header.innerHTML = `<span>Meeting #${index}</span>`;
+      header.innerHTML = `<span>Meeting #${index}</span><small>Edit date, time and base zone</small>`;
 
       const fields = document.createElement("div");
       fields.className = "field-group";
@@ -722,17 +875,24 @@
       row.appendChild(fields);
 
       const now = new Date();
-      const todayISO = now.toISOString().substring(0, 10);
-      dateInput.value = todayISO;
-      now.setMinutes(now.getMinutes() + 60 - now.getMinutes());
-      timeInput.value = now.toISOString().substring(11, 16);
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+      dateInput.value = `${year}-${month}-${day}`;
 
-      const guessed = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-      populateTimezoneSelect(baseTzSelect, TIMEZONES.includes(guessed) ? guessed : "UTC");
+      now.setMinutes(0, 0, 0);
+      now.setHours(now.getHours() + 1);
+      const hours = String(now.getHours()).padStart(2, "0");
+      const minutes = String(now.getMinutes()).padStart(2, "0");
+      timeInput.value = `${hours}:${minutes}`;
 
-      dateInput.addEventListener("change", rebuildTable);
-      timeInput.addEventListener("change", rebuildTable);
-      baseTzSelect.addEventListener("change", rebuildTable);
+      const guessed = safeGuessTimezone();
+      populateTimezoneSelect(baseTzSelect, guessed);
+
+      const onChange = () => rebuildTable();
+      dateInput.addEventListener("change", onChange);
+      timeInput.addEventListener("change", onChange);
+      baseTzSelect.addEventListener("change", onChange);
 
       removeBtn.addEventListener("click", () => {
         row.remove();
@@ -769,23 +929,15 @@
         const [hour, minute] = timeVal.split(":").map(Number);
         const instant = new Date(year, month - 1, day, hour, minute);
 
-        return {
-          index: idx,
-          baseTz: baseTzSelect.value,
-          instant
-        };
+        return { index: idx, baseTz: baseTzSelect.value, instant };
       }).filter(Boolean);
     }
 
-    // Rebuild table with:
-    // Columns: Meeting #, <Name> (Timezone), ...
-    // Row per meeting, each cell: "HH:MM AM/PM - Wed, Feb 11, 2026".
     function rebuildTable() {
       const participants = getParticipants();
       const meetings = getMeetings();
       resultsBody.innerHTML = "";
 
-      // Header
       headerRow.innerHTML = "<th>Meeting #</th>";
       participants.forEach(p => {
         const th = document.createElement("th");
@@ -793,10 +945,8 @@
         headerRow.appendChild(th);
       });
 
-      // Rows
       meetings.forEach(meeting => {
         const tr = document.createElement("tr");
-
         const indexTd = document.createElement("td");
         indexTd.textContent = meeting.index;
         tr.appendChild(indexTd);
@@ -813,7 +963,6 @@
             day: "2-digit",
             year: "numeric"
           });
-
           const td = document.createElement("td");
           td.textContent = `${localTimeStr} - ${localDateStr}`;
           tr.appendChild(td);
@@ -821,23 +970,188 @@
 
         resultsBody.appendChild(tr);
       });
+
+      if (participants.length > 0 && meetings.length > 0) {
+        tableWrapper.style.display = "flex";
+      } else {
+        tableWrapper.style.display = "none";
+      }
+      updateLayoutForCollapseState();
     }
+
+    function updateCurrentTime() {
+      const now = new Date();
+      const timeStr = new Intl.DateTimeFormat("en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true
+      }).format(now);
+      currentTimeEl.textContent = timeStr;
+    }
+
+    // Interpret date/time as local clock in baseTz, then get an instant
+    function makeInstantFromBase(dateVal, timeVal, baseTz) {
+      const [y, m, d] = dateVal.split("-").map(Number);
+      const [hh, mm] = timeVal.split(":").map(Number);
+      const local = new Date(y, m - 1, d, hh, mm, 0, 0);
+
+      const fmt = (tz) => new Intl.DateTimeFormat("en-US", {
+        timeZone: tz,
+        hour12: false,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      }).format(local);
+
+      const browserTz = safeGuessTimezone();
+      const [baseDatePart, baseTimePart] = fmt(baseTz).split(", ");
+      const [localDatePart, localTimePart] = fmt(browserTz).split(", ");
+
+      const [baseH, baseM] = baseTimePart.split(":").map(Number);
+      const [locH, locM] = localTimePart.split(":").map(Number);
+
+      const offsetMinutes = (baseH * 60 + baseM) - (locH * 60 + locM);
+      return new Date(local.getTime() - offsetMinutes * 60 * 1000);
+    }
+
+    function initTimezoneExplorer() {
+      const guessed = safeGuessTimezone();
+      populateTimezoneSelect(tzExplorerBase, guessed);
+
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, "0");
+      const day = String(now.getDate()).padStart(2, "0");
+      tzExplorerDate.value = `${year}-${month}-${day}`;
+
+      const hours = String(now.getHours()).padStart(2, "0");
+      const minutes = String(now.getMinutes()).padStart(2, "0");
+      tzExplorerTime.value = `${hours}:${minutes}`;
+
+      tzExplorerDate.addEventListener("change", rebuildTimezoneExplorer);
+      tzExplorerTime.addEventListener("change", rebuildTimezoneExplorer);
+      tzExplorerBase.addEventListener("change", rebuildTimezoneExplorer);
+
+      rebuildTimezoneExplorer();
+    }
+
+    function rebuildTimezoneExplorer() {
+      const dateVal = tzExplorerDate.value;
+      const timeVal = tzExplorerTime.value;
+      if (!dateVal || !timeVal) return;
+
+      const baseTz = tzExplorerBase.value;
+      const baseInstant = makeInstantFromBase(dateVal, timeVal, baseTz);
+
+      tzExplorerGrid.innerHTML = "";
+      const participants = getParticipants();
+      if (participants.length === 0) return;
+
+      const tzSet = Array.from(new Set(participants.map(p => p.tz)));
+
+      tzSet.forEach(tz => {
+        const item = document.createElement("div");
+        item.className = "tz-explorer-item";
+
+        const name = document.createElement("div");
+        name.className = "tz-explorer-name";
+        name.textContent = tz;
+
+        const time = document.createElement("div");
+        time.className = "tz-explorer-time";
+
+        const tStr = formatInTimeZone(baseInstant, tz, {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true
+        });
+        const dStr = formatInTimeZone(baseInstant, tz, {
+          weekday: "short",
+          month: "short",
+          day: "2-digit",
+          year: "numeric"
+        });
+
+        time.textContent = `${tStr} — ${dStr}`;
+        item.appendChild(name);
+        item.appendChild(time);
+        tzExplorerGrid.appendChild(item);
+      });
+    }
+
+    function updateTeamView() {
+      const participants = getParticipants();
+      const now = new Date();
+      teamViewGrid.innerHTML = "";
+
+      participants.forEach(p => {
+        const card = document.createElement("div");
+        card.className = "team-card";
+
+        const header = document.createElement("div");
+        header.className = "team-card-header";
+        const title = document.createElement("span");
+        title.className = "team-card-title";
+        title.textContent = p.label;
+        const tzSpan = document.createElement("span");
+        tzSpan.textContent = p.tz;
+        header.appendChild(title);
+        header.appendChild(tzSpan);
+
+        const body = document.createElement("div");
+        body.className = "team-card-body";
+        const nowTime = formatInTimeZone(now, p.tz, {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: true
+        });
+        const nowDate = formatInTimeZone(now, p.tz, {
+          weekday: "short",
+          month: "short",
+          day: "2-digit"
+        });
+        body.textContent = `${nowTime} — ${nowDate}`;
+
+        card.appendChild(header);
+        card.appendChild(body);
+        teamViewGrid.appendChild(card);
+      });
+    }
+
+    function updateLayoutForCollapseState() {
+      const anyOpen = Array.from(document.querySelectorAll("details.collapsible"))
+        .some(d => d.open);
+      if (anyOpen) {
+        mainLayout.classList.remove("full-width-table");
+      } else {
+        mainLayout.classList.add("full-width-table");
+      }
+    }
+
+    document.querySelectorAll("details.collapsible").forEach(d => {
+      d.addEventListener("toggle", updateLayoutForCollapseState);
+    });
 
     addTzButton.addEventListener("click", () => {
       createParticipantRow();
       rebuildTable();
+      rebuildTimezoneExplorer();
     });
 
     addMeetingButton.addEventListener("click", () => {
       createMeetingRow();
     });
 
-    // Escape key collapses all collapsible sections.
     window.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
         document.querySelectorAll("details.collapsible[open]").forEach(d => {
           d.open = false;
         });
+        updateLayoutForCollapseState();
       }
     });
 
@@ -845,7 +1159,18 @@
       createParticipantRow("America/New_York", "Alice");
       createParticipantRow("Europe/London", "Bob");
       createParticipantRow("Asia/Kolkata", "Charlie");
+
       createMeetingRow();
+
+      updateCurrentTime();
+      updateTeamView();
+      setInterval(() => {
+        updateCurrentTime();
+        updateTeamView();
+      }, 1000);
+
+      initTimezoneExplorer();
+      rebuildTable();
     })();
   </script>
 </body>
